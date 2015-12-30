@@ -41,7 +41,9 @@ namespace wbi {
 
 namespace yarpWbi
 {
-    enum AccelerometerType { IMU_STYLE };
+    enum AccelerometerType { IMU_STYLE , MTB_ACCL};
+    
+    enum GyroscopeType {IMU_GYRO , MTB_GYRO};
 
     /** List of available encoder types. */
     enum EncoderType
@@ -71,6 +73,23 @@ namespace yarpWbi
         int type_reference_index;
     };
 
+    /**
+     * Struct for holding information about loaded gyroscopes
+     */
+    struct GyroscopeConfigurationInfo
+    {
+        GyroscopeType type;
+        std::string type_option;
+    };
+
+    /**
+     * Struct for holding information about loaded accelerometers
+     */
+    struct GyroscopeRuntimeInfo
+    {
+        GyroscopeType type;
+        int type_reference_index;
+    };
 
 
     /**
