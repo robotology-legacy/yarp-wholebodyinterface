@@ -41,8 +41,8 @@ namespace wbi {
 
 namespace yarpWbi
 {
-    enum AccelerometerType { IMU_ACCL , MTB_ACCL};
-    
+
+    enum AccelerometerType { IMU_STYLE , MTB_ACCL};
     enum GyroscopeType {IMU_GYRO , MTB_GYRO};
 
     /** List of available encoder types. */
