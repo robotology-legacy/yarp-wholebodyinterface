@@ -170,10 +170,16 @@ bool yarpWholeBodySensors::init()
 
     for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
     {
-        if( acc_infos[acc_index].type == IMU_STYLE )
+        switch(acc_infos[acc_index].type)
         {
-            //std::cout << "[INFO] adding imu " << acc_infos[acc_index].type_option << std::endl;
-            sensorIdList[SENSOR_IMU].addID(acc_infos[acc_index].type_option);
+            case IMU_ACCL:
+                //std::cout << "[INFO] adding imu " << acc_infos[acc_index].type_option << std::endl;
+                sensorIdList[SENSOR_IMU].addID(acc_infos[acc_index].type_option);
+                break;
+            case MTB_ACCL:
+                break;
+            default : 
+                break;
         }
     }
 
@@ -459,6 +465,7 @@ bool yarpWholeBodySensors::openPwm(const int bp)
 
 bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opts, const IDList& list, vector< AccelerometerConfigurationInfo >& infos)
 {
+    
     std::string accelerometers_info_group_name = "WBI_YARP_ACCELEROMETERS";
     yarp::os::Bottle info_lists = wbi_yarp_properties.findGroup(accelerometers_info_group_name);
     if( info_lists.isNull() || info_lists.size() == 0 ) {
@@ -495,9 +502,9 @@ bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opt
         std::string accelerometer_type_option = port->get(1).asString();
         if( accelerometer_type == "imu" )
         {
-            infos[acc_index].type = IMU_STYLE;
+            infos[acc_index].type = IMU_ACCL;
             infos[acc_index].type_option = accelerometer_type_option;
-        }
+        } // incorporate the MTB Accelerometers
         else
         {
             std::cout << "yarpWbi::loadAccelerometerInfoFromConfig error: "
@@ -513,7 +520,7 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
     bool ret = true;
     switch( info.type )
     {
-        case IMU_STYLE:
+        case IMU_ACCL:
             int reference_imu_sensor_index;
             ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_imu_sensor_index);
             if( !ret )
@@ -525,8 +532,11 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
             accelerometersReferenceIndeces[acc_index].type = info.type;
             accelerometersReferenceIndeces[acc_index].type_reference_index = reference_imu_sensor_index;
             break;
+        case MTB_ACCL:
+            //open MTB Accelerometers
+            break;
         default:
-            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known type is IMU_STYLE: " << IMU_STYLE << " )"
+            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known types are IMU_ACCL : " << IMU_ACCL << " and MTB_ACCL "<<MTB_ACCL<<" )"
                           << info.type << std::endl;
             ret = false;
             break;
@@ -944,22 +954,29 @@ bool yarpWholeBodySensors::readAccelerometer(const int accelerometer_index, doub
         return false;
     }
 
-    if( accelerometersReferenceIndeces[accelerometer_index].type == IMU_STYLE )
+    int accelerometer_imu_index;
+    switch(accelerometersReferenceIndeces[accelerometer_index].type)
     {
-        int accelerometer_imu_index = accelerometersReferenceIndeces[accelerometer_index].type_reference_index;
-        if( stamps != 0 )
-        {
-            *stamps = imuStampLastRead[accelerometer_imu_index];
-        }
+        case IMU_ACCL : 
+            accelerometer_imu_index = accelerometersReferenceIndeces[accelerometer_index].type_reference_index;
 
-        acc[0] = imuLastRead[accelerometer_imu_index][4];
-        acc[1] = imuLastRead[accelerometer_imu_index][5];
-        acc[2] = imuLastRead[accelerometer_imu_index][6];
-        ret = true;
-    }
-    else
-    {
-        ret = false;
+            // Process IMU accelerometer data
+            if( stamps != 0 )
+            {
+                *stamps = imuStampLastRead[accelerometer_imu_index];
+            }
+
+            acc[0] = imuLastRead[accelerometer_imu_index][4];
+            acc[1] = imuLastRead[accelerometer_imu_index][5];
+            acc[2] = imuLastRead[accelerometer_imu_index][6];
+            ret = true;
+            break;
+        case MTB_ACCL : 
+            // Process MTB accelerometer data
+            ret = true;
+            break;
+        default : 
+            ret = false;
     }
     return ret;
 }
