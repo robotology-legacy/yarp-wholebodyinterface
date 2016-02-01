@@ -29,15 +29,15 @@ namespace yarpWbi
 /// localFloatingBaseStateEstimator methods
 //////////////////////////////////////////////////////////////////////////////
 
-localFloatingBaseStateEstimator::localFloatingBaseStateEstimator(wbi::iWholeBodyModel * _wholeBodyModel, int _dof):
-    wholeBodyModel(NULL),
+localFloatingBaseStateEstimator::localFloatingBaseStateEstimator(std::weak_ptr<wbi::iWholeBodyModel> _wholeBodyModel, int _dof):
+    wholeBodyModel(),
     robot_reference_frame_link(-1),
     luDecompositionOfBaseJacobian(6)
 {
     init(_wholeBodyModel,_dof);
 }
 
-bool localFloatingBaseStateEstimator::init(wbi::iWholeBodyModel * _wholeBodyModel, int _dof)
+bool localFloatingBaseStateEstimator::init(std::weak_ptr<wbi::iWholeBodyModel> _wholeBodyModel, int _dof)
 {
     wholeBodyModel = _wholeBodyModel;
     return changeDoF(_dof);
@@ -54,9 +54,9 @@ bool localFloatingBaseStateEstimator::changeDoF(int _dof)
 
 bool localFloatingBaseStateEstimator::setWorldBaseLinkName(std::string linkName)
 {
-    if (!wholeBodyModel) return false;
+    if (wholeBodyModel.expired()) return false;
 
-    bool found = wholeBodyModel->getFrameList().idToIndex(linkName.c_str(), robot_reference_frame_link);
+    bool found = wholeBodyModel.lock()->getFrameList().idToIndex(linkName.c_str(), robot_reference_frame_link);
     if (!found || robot_reference_frame_link < 0)
     {
         return false;
@@ -66,9 +66,9 @@ bool localFloatingBaseStateEstimator::setWorldBaseLinkName(std::string linkName)
 
 bool localFloatingBaseStateEstimator::computeBasePosition(double *q_temp, double * base_pos_estimate)
 {
-    if (!wholeBodyModel) return false;
+    if (wholeBodyModel.expired()) return false;
 
-    wholeBodyModel->computeH(q_temp,wbi::Frame::identity(),robot_reference_frame_link, rootLink_H_ReferenceLink);
+    wholeBodyModel.lock()->computeH(q_temp,wbi::Frame::identity(),robot_reference_frame_link, rootLink_H_ReferenceLink);
 
     referenceLink_H_rootLink = rootLink_H_ReferenceLink.getInverse();
     world_H_rootLink = world_H_reference*referenceLink_H_rootLink ;
@@ -79,14 +79,14 @@ bool localFloatingBaseStateEstimator::computeBasePosition(double *q_temp, double
 }
 bool localFloatingBaseStateEstimator::computeBaseVelocity(double* qj, double* dqj, double* base_vel_estimate)
 {
-    if (!wholeBodyModel) return false;
+    if (wholeBodyModel.expired()) return false;
 
     complete_jacobian.setZero();
     Eigen::Map<Eigen::VectorXd> dqjVect(dqj, dof);
     Eigen::Map<Eigen::VectorXd> baseVelocityWrapper(base_vel_estimate, 6);
     baseVelocityWrapper.setZero();
 
-    wholeBodyModel->computeJacobian(qj, world_H_rootLink, robot_reference_frame_link, complete_jacobian.data());
+    wholeBodyModel.lock()->computeJacobian(qj, world_H_rootLink, robot_reference_frame_link, complete_jacobian.data());
     luDecompositionOfBaseJacobian.compute(complete_jacobian.leftCols<6>());
 
     baseVelocityWrapper =-luDecompositionOfBaseJacobian.solve(complete_jacobian.rightCols(dof) * dqjVect);

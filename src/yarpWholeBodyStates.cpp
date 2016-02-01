@@ -48,15 +48,17 @@ using namespace yarp::math;
 //                                          ICUB WHOLE BODY STATES
 // *********************************************************************************************************************
 // *********************************************************************************************************************
-yarpWholeBodyStates::yarpWholeBodyStates(const char* _name, const yarp::os::Property & opt,wbi::iWholeBodyModel *wholeBodyModelRef):
+yarpWholeBodyStates::yarpWholeBodyStates(const char* _name,
+                                         const yarp::os::Property & opt,
+                                         std::weak_ptr<wbi::iWholeBodyModel> wholeBodyModelRef):
 initDone(false),
 name(_name),
 wbi_yarp_properties(opt),
 sensors(0),
-estimator(0)
+estimator(0),
+wholeBodyModel(wholeBodyModelRef)
 {
     estimateIdList.resize(wbi::ESTIMATE_TYPE_SIZE);
-    wholeBodyModel = wholeBodyModelRef;
 }
 
 bool yarpWholeBodyStates::setYarpWbiProperties(const yarp::os::Property & yarp_wbi_properties)

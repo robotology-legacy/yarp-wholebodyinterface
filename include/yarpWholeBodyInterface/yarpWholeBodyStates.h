@@ -239,12 +239,14 @@ namespace yarpWbi
         bool configureFloatingBaseStateEstimator();
 
         // Pointer to a wholeBodyModel
-        wbi::iWholeBodyModel * wholeBodyModel;
+        std::weak_ptr<wbi::iWholeBodyModel> wholeBodyModel;
 
 
     public:
         // *** CONSTRUCTORS ***
-        yarpWholeBodyStates(const char* _name, const yarp::os::Property & _wbi_yarp_conf, wbi::iWholeBodyModel *wholeBodyModelRef=NULL);
+        yarpWholeBodyStates(const char* _name,
+                            const yarp::os::Property & _wbi_yarp_conf,
+                            std::weak_ptr<wbi::iWholeBodyModel> wholeBodyModelRef = std::weak_ptr<wbi::iWholeBodyModel>());
         virtual ~yarpWholeBodyStates();
 
         virtual bool init();

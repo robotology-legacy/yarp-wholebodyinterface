@@ -65,10 +65,10 @@ namespace yarpWbi
         yarp::os::Mutex wbiMutex;
 
     protected:
-        yarpWholeBodyActuators  *actuatorInt;
-        yarpWholeBodyModel      *modelInt;
-        yarpWholeBodyStates     *stateInt;
-        yarpWholeBodyModel      *modelForStateInt;
+        std::shared_ptr<yarpWholeBodyActuators> actuatorInt;
+        std::shared_ptr<yarpWholeBodyModel> modelInt;
+        std::shared_ptr<yarpWholeBodyStates> stateInt;
+        std::shared_ptr<yarpWholeBodyModel> modelForStateInt;
 
         wbi::IDList empty_id_list;
 
@@ -77,20 +77,27 @@ namespace yarpWbi
         yarpWholeBodyInterface(const char* _interfaceName,
                                const yarp::os::Property & _yarp_wbi_properties=yarp::os::Property());
 
+
+        yarpWholeBodyInterface(std::shared_ptr<yarpWholeBodyActuators> actuators,
+                               std::shared_ptr<yarpWholeBodyModel> model,
+                               std::shared_ptr<yarpWholeBodyStates> state,
+                               const char* _interfaceName,
+                               const yarp::os::Property & _yarp_wbi_properties=yarp::os::Property());
+
         /** gets the actuator implementation
          * @return the wholeBodyActuator implementation
          */
-        yarpWholeBodyActuators* wholeBodyActuator();
+        std::weak_ptr<yarpWholeBodyActuators> wholeBodyActuator();
 
         /** gets the model implementation
          * @return the wholeBodyModel implementation
          */
-        yarpWholeBodyModel* wholeBodyModel();
+        std::weak_ptr<yarpWholeBodyModel> wholeBodyModel();
 
         /** gets the state implementation
          * @return the wholeBodyStates implementation
          */
-        yarpWholeBodyStates* wholeBodyState();
+        std::weak_ptr<yarpWholeBodyStates> wholeBodyState();
 
          /**
          * Set the properties of the yarpWholeBodyInterface

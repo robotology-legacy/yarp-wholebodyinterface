@@ -44,27 +44,54 @@ using namespace yarp::sig;
 yarpWholeBodyInterface::yarpWholeBodyInterface(
     const char* _name, const yarp::os::Property& _yarp_wbi_properties)
 {
-    actuatorInt = new yarpWholeBodyActuators((_name + string("actuator")).c_str(),
-        _yarp_wbi_properties);
-    modelInt = new yarpWholeBodyModel((_name + string("model")).c_str(),
-        _yarp_wbi_properties);
-    modelForStateInt = new yarpWholeBodyModel((_name + string("model")).c_str(),
-        _yarp_wbi_properties);
-    stateInt = new yarpWholeBodyStates((_name + string("state")).c_str(),
-        _yarp_wbi_properties, modelForStateInt);
+    actuatorInt = std::shared_ptr<yarpWholeBodyActuators>(new yarpWholeBodyActuators((_name + string("actuator")).c_str(),
+        _yarp_wbi_properties));
+    modelInt = std::shared_ptr<yarpWholeBodyModel>(new yarpWholeBodyModel((_name + string("model")).c_str(),
+        _yarp_wbi_properties));
+    modelForStateInt = std::shared_ptr<yarpWholeBodyModel>(new yarpWholeBodyModel((_name + string("model")).c_str(),
+        _yarp_wbi_properties));
+    stateInt = std::shared_ptr<yarpWholeBodyStates>(new yarpWholeBodyStates((_name + string("state")).c_str(),
+        _yarp_wbi_properties, modelForStateInt));
 }
+
+yarpWholeBodyInterface::yarpWholeBodyInterface(std::shared_ptr<yarpWholeBodyActuators> actuators,
+                                               std::shared_ptr<yarpWholeBodyModel> model,
+                                               std::shared_ptr<yarpWholeBodyStates> state,
+                                               const char* _interfaceName,
+                                               const yarp::os::Property & _yarp_wbi_properties)
+: actuatorInt(actuators)
+, modelInt(std::shared_ptr<yarpWholeBodyModel>())
+              {
+                  if (!actuatorInt.get()) {
+                      actuatorInt.reset(new yarpWholeBodyActuators((_interfaceName + string("actuator")).c_str(),
+                                                                   _yarp_wbi_properties));
+                  }
+                  if (!modelInt.get()) {
+                      modelInt.reset(new yarpWholeBodyModel((_interfaceName + string("model")).c_str(),
+                                                            _yarp_wbi_properties));
+                  }
+                  if (!modelForStateInt.get()) {
+                      modelForStateInt.reset(new yarpWholeBodyModel((_interfaceName + string("model")).c_str(),
+                                                                    _yarp_wbi_properties));
+                  }
+                  if (!stateInt.get()) {
+                      stateInt.reset(new yarpWholeBodyStates((_interfaceName + string("state")).c_str(),
+                                                             _yarp_wbi_properties, modelForStateInt));
+                  }
+
+              }
 
 yarpWholeBodyInterface::~yarpWholeBodyInterface() { close(); }
 
-yarpWholeBodyActuators* yarpWholeBodyInterface::wholeBodyActuator()
+std::weak_ptr<yarpWholeBodyActuators> yarpWholeBodyInterface::wholeBodyActuator()
 {
     return actuatorInt;
 }
-yarpWholeBodyModel* yarpWholeBodyInterface::wholeBodyModel()
+std::weak_ptr<yarpWholeBodyModel> yarpWholeBodyInterface::wholeBodyModel()
 {
     return modelInt;
 }
-yarpWholeBodyStates* yarpWholeBodyInterface::wholeBodyState()
+std::weak_ptr<yarpWholeBodyStates> yarpWholeBodyInterface::wholeBodyState()
 {
     return stateInt;
 }
@@ -115,48 +142,23 @@ bool yarpWholeBodyInterface::init()
 
 bool yarpWholeBodyInterface::close()
 {
-    bool ok = true;
     if (actuatorInt) {
-        if (actuatorInt->close()) {
-            delete actuatorInt;
-            actuatorInt = 0;
-        }
-        else {
-            ok = false;
-        }
+        actuatorInt.reset();
     }
 
     if (stateInt) {
-        if (stateInt->close()) {
-            delete stateInt;
-            stateInt = 0;
-        }
-        else {
-            ok = false;
-        }
+        stateInt.reset();
     }
 
     if (modelForStateInt) {
-        if (modelForStateInt->close()) {
-            delete modelForStateInt;
-            modelForStateInt = 0;
-        }
-        else {
-            ok = false;
-        }
+        modelForStateInt.reset();
     }
 
     if (modelInt) {
-        if (modelInt->close()) {
-            delete modelInt;
-            modelInt = 0;
-        }
-        else {
-            ok = false;
-        }
+        modelInt.reset();
     }
-
-    return ok;
+    //Note: by using shared_ptr we do not have anymore the possibility to get the return value of the close
+    return true;
 }
 
 bool yarpWholeBodyInterface::removeJoint(const ID& j)

@@ -52,7 +52,7 @@ namespace yarpWbi
     {
     protected:
         int baseFrameLinkID;         // ID of the assigned base frame for base to root rototranslation computation
-        wbi::iWholeBodyModel *wholeBodyModel;
+        std::weak_ptr<wbi::iWholeBodyModel> wholeBodyModel;
         int dof;                                            // Number of degrees of freedom in the wbi
 
         int robot_reference_frame_link;                     //Reference link assigned as world frame
@@ -70,10 +70,12 @@ namespace yarpWbi
         Eigen::PartialPivLU<Eigen::MatrixXd::PlainObject> luDecompositionOfBaseJacobian;
 
     public:
-        localFloatingBaseStateEstimator(wbi::iWholeBodyModel * _wholeBodyModel=0, int _dof=0);
+        localFloatingBaseStateEstimator(std::weak_ptr<wbi::iWholeBodyModel> _wholeBodyModel = std::weak_ptr<wbi::iWholeBodyModel>(),
+                                        int _dof=0);
 
         /** Initialize the class */
-        bool init(wbi::iWholeBodyModel * _wholeBodyModel=0, int _dof=0);
+        bool init(std::weak_ptr<wbi::iWholeBodyModel> _wholeBodyModel = std::weak_ptr<wbi::iWholeBodyModel>(),
+                  int _dof=0);
 
         bool changeDoF(int new_dof);
 
