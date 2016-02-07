@@ -263,7 +263,8 @@ bool yarpWholeBodySensors::init()
     accLastRead.resize(nrOfAccSensors);
     accStampLastRead.resize(nrOfAccSensors);
     accelerometersReferenceIndeces.resize(nrOfAccSensors);
-
+    
+    std::cout<<"--------------------\nAccelerometers in config : "<<nrOfAccSensors<<"\n";
     for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
     {
             initDone = initDone && openAccelerometer(acc_index,acc_infos[acc_index]);
@@ -522,15 +523,22 @@ bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opt
             return false;
         }
     }
+    infos.resize(info_lists.size());
+  
+//     list.resize(info_list.size());
+    std::cout<<"--------------------\nAccelerometers in config (info_list): "<<info_lists.size()<<"\n";
+    //std::cout<<"
+    std::cout<<"--------------------\nAccelerometer list size (list):"<<list.size()<<"\n";
+    
+    
 
-    infos.resize(list.size());
-
-    for(int acc_index = 0; acc_index < (int)list.size(); acc_index++ )
+    for(int acc_index = 0; acc_index < (int)info_lists.size(); acc_index++ )
     {
         wbi::ID acc_ID;
         list.indexToID(acc_index,acc_ID);
+        std::cout <<"----------------\n"<< acc_ID.toString() << std::endl;
         yarp::os::Bottle * port = info_lists.find(acc_ID.toString()).asList();
-        //std::cout << port->toString() << std::endl;
+        //std::cout <<"----------------\n"<< port->toString() << std::endl;
         if( port == NULL
             || port->size() != 2
             || !(port->get(0).isString())
@@ -541,6 +549,7 @@ bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opt
         }
         std::string accelerometer_type = port->get(0).asString();
         std::string accelerometer_type_option = port->get(1).asString();
+        std::cout<<"--------------------\naccelerometer port was "<<port->get(1).asString()<<"\n";
         if( accelerometer_type == "imu" )
         {
             infos[acc_index].type = IMU_ACCL;
