@@ -569,12 +569,76 @@ bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opt
     return true;
 }
 
+bool yarpWholeBodySensors::loadGyroscopeInfoFromConfig(const Searchable& opts, const IDList& list, vector< GyroscopeConfigurationInfo >& infos)
+{
+    
+//     std::string accelerometers_info_group_name = "WBI_YARP_ACCELEROMETERS";
+//     yarp::os::Bottle info_lists = wbi_yarp_properties.findGroup(accelerometers_info_group_name);
+//     if( info_lists.isNull() || info_lists.size() == 0 ) {
+//         if( list.size() == 0 )
+//         {
+//             infos.resize(0);
+//             return true;
+//         }
+//         else
+//         {
+//             std::cout << "[ERR] yarpWbi::loadAccelerometerInfoFromConfig error: group "
+//                       << accelerometers_info_group_name << " not found in yarpWholeBodyInterface configuration file."  << std::endl;
+//             return false;
+//         }
+//     }
+//     infos.resize(info_lists.size());
+//   
+// //     list.resize(info_list.size());
+//     std::cout<<"--------------------\nAccelerometers in config (info_list): "<<info_lists.size()<<"\n";
+//     //std::cout<<"
+//     std::cout<<"--------------------\nAccelerometer list size (list):"<<list.size()<<"\n";
+//     
+//     
+// 
+//     for(int acc_index = 0; acc_index < (int)info_lists.size(); acc_index++ )
+//     {
+//         wbi::ID acc_ID;
+//         list.indexToID(acc_index,acc_ID);
+//         std::cout <<"----------------\n"<< acc_ID.toString() << std::endl;
+//         yarp::os::Bottle * port = info_lists.find(acc_ID.toString()).asList();
+//         //std::cout <<"----------------\n"<< port->toString() << std::endl;
+//         if( port == NULL
+//             || port->size() != 2
+//             || !(port->get(0).isString())
+//             || !(port->get(1).isString()) )
+//         {
+//             std::cout << "yarpWbi::loadAccelerometerInfoFromConfig error: " << info_lists.toString() << " has a malformed element" << std::endl;
+//             return false;
+//         }
+//         std::string accelerometer_type = port->get(0).asString();
+//         std::string accelerometer_type_option = port->get(1).asString();
+//         std::cout<<"--------------------\naccelerometer port was "<<port->get(1).asString()<<"\n";
+//         if( accelerometer_type == "imu" )
+//         {
+//             infos[acc_index].type = IMU_ACCL;
+//             infos[acc_index].type_option = accelerometer_type_option;
+//         } // incorporate the MTB Accelerometers
+//         else if ( accelerometer_type == "mtb")
+//         {
+//             infos[acc_index].type = MTB_ACCL;
+//             infos[acc_index].type_option = accelerometer_type_option;
+//         }
+//         else
+//         {
+//             std::cout << "yarpWbi::loadAccelerometerInfoFromConfig error: "
+//                        << "accelerometer type " << accelerometer_type << "not recognized" << std::endl;
+//             return false;
+//         }
+//     }
+    return true;
+}
 bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const AccelerometerConfigurationInfo & info)
 {
     bool ret = true;
     switch( info.type )
     {
-        case IMU_STYLE:
+        case IMU_ACCL:
             int reference_imu_sensor_index;
             ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_imu_sensor_index);
             if( !ret )
@@ -587,14 +651,17 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
             accelerometersReferenceIndeces[acc_index].type_reference_index = reference_imu_sensor_index;
             break;
         default:
-            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known type is IMU_STYLE: " << IMU_STYLE << " )"
+            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known type is IMU_STYLE: " << IMU_ACCL << " )"
                           << info.type << std::endl;
             ret = false;
             break;
     }
     return ret;
 }
-
+bool yarpWholeBodySensors::openGyroscope(const int acc_index, const GyroscopeConfigurationInfo & info)
+{
+    return true;
+} 
 bool yarpWholeBodySensors::openImu(const int numeric_id, const std::string & port_name)
 {
     if( numeric_id < 0 || numeric_id >= (int)sensorIdList[SENSOR_IMU].size() )
