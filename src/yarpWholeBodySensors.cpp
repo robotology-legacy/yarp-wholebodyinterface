@@ -425,7 +425,6 @@ bool yarpWholeBodySensors::readSensor(const SensorType st, const int sid, double
     case SENSOR_FORCE_TORQUE:   return readFTsensor(sid, data, stamps, blocking);
     case SENSOR_TORQUE:         return readTorqueSensor(sid, data, stamps, blocking);
     case SENSOR_ACCELEROMETER:  return readAccelerometer(sid, data, stamps, blocking);
-    case SENSOR_GYROSCOPE:      return readGyroscope(sid,data,stamps,blocking);
     default: break;
     }
     return false;
@@ -575,7 +574,7 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
     bool ret = true;
     switch( info.type )
     {
-        case IMU_ACCL:
+        case IMU_STYLE:
             int reference_imu_sensor_index;
             ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_imu_sensor_index);
             if( !ret )
@@ -587,11 +586,8 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
             accelerometersReferenceIndeces[acc_index].type = info.type;
             accelerometersReferenceIndeces[acc_index].type_reference_index = reference_imu_sensor_index;
             break;
-        case MTB_ACCL:
-            //open MTB Accelerometers
-            break;
         default:
-            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known types are IMU_ACCL : " << IMU_ACCL << " and MTB_ACCL "<<MTB_ACCL<<" )"
+            std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known type is IMU_STYLE: " << IMU_STYLE << " )"
                           << info.type << std::endl;
             ret = false;
             break;
@@ -599,86 +595,6 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
     return ret;
 }
 
-bool yarpWholeBodySensors::loadGyroscopeInfoFromConfig(const Searchable& opts, const IDList& list, vector< GyroscopeConfigurationInfo >& infos)
-{
-    
-    std::string gyroscopes_info_group_name = "WBI_YARP_GYROSCOPES";
-    yarp::os::Bottle info_lists = wbi_yarp_properties.findGroup(gyroscopes_info_group_name);
-    if( info_lists.isNull() || info_lists.size() == 0 ) {
-        if( list.size() == 0 )
-        {
-            infos.resize(0);
-            return true;
-        }
-        else
-        {
-            std::cout << "[ERR] yarpWbi::loadGyroscopeInfoFromConfig error: group "
-                      << gyroscopes_info_group_name << " not found in yarpWholeBodyInterface configuration file."  << std::endl;
-            return false;
-        }
-    }
-
-    infos.resize(list.size());
-
-    for(int gyro_index = 0; gyro_index < (int)list.size(); gyro_index++ )
-    {
-        wbi::ID gyro_ID;
-        list.indexToID(gyro_index,gyro_ID);
-        yarp::os::Bottle * port = info_lists.find(gyro_ID.toString()).asList();
-        //std::cout << port->toString() << std::endl;
-        if( port == NULL
-            || port->size() != 2
-            || !(port->get(0).isString())
-            || !(port->get(1).isString()) )
-        {
-            std::cout << "yarpWbi::loadGyroscopeInfoFromConfig error: " << info_lists.toString() << " has a malformed element" << std::endl;
-            return false;
-        }
-        std::string gyroscope_type = port->get(0).asString();
-        std::string gyroscope_type_option = port->get(1).asString();
-        if( gyroscope_type == "imu" )
-        {
-            infos[gyro_index].type = IMU_GYRO;
-            infos[gyro_index].type_option = gyroscope_type_option;
-        } // incorporate the MTB Accelerometers
-        else
-        {
-            std::cout << "yarpWbi::loadGyroscopeInfoFromConfig error: "
-                       << "gyroscope type " << gyroscope_type << "not recognized" << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
-
-bool yarpWholeBodySensors::openGyroscope(const int gyro_index, const GyroscopeConfigurationInfo & info)
-{
-     bool ret = true;
-    switch( info.type )
-    {
-        case IMU_GYRO:
-            int reference_imu_sensor_index;
-            ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_imu_sensor_index);
-            if( !ret )
-            {
-                std::cerr << "yarpWholeBodySensors::openGyroscope :  impossible to find IMU "
-                          << info.type_option << std::endl;
-                return false;
-            }
-            gyroscopesReferenceIndeces[gyro_index].type = info.type;
-            gyroscopesReferenceIndeces[gyro_index].type_reference_index = reference_imu_sensor_index;
-            break;
-        case MTB_GYRO:
-            //open MTB Accelerometers
-            break;
-        default:
-            std::cerr << "yarpWholeBodySensors::openGyroscope : unknown gyroscope type (only known types are IMU_GYRO : " << IMU_GYRO << " and MTB_GYRO "<<MTB_GYRO<<" )"
-                          << info.type << std::endl;
-            ret = false;
-            break;
-    }
-     return ret;
-}
 bool yarpWholeBodySensors::openImu(const int numeric_id, const std::string & port_name)
 {
     if( numeric_id < 0 || numeric_id >= (int)sensorIdList[SENSOR_IMU].size() )
