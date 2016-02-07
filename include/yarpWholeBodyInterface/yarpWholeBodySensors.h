@@ -150,7 +150,8 @@ namespace yarpWbi
         std::vector<double>  ftStampSensLastRead;
         std::vector<yarp::sig::Vector> accLastRead;
         std::vector<double>  accStampLastRead;
-
+        std::vector<yarp::sig::Vector> gyroLastRead;
+        std::vector<double>  gyroStampLastRead;
         // yarp interfaces (the "key" of these vector is wbi numeric controlboard id
         std::vector<yarp::dev::IEncodersTimed*>       ienc;   // interface to read encoders
         std::vector<yarp::dev::IOpenLoopControl*>     iopl;   // interface to read motor PWM
@@ -165,7 +166,7 @@ namespace yarpWbi
         // reference to other sensor (for accelerometers we always get their information
         //  from another sensor, such as the IMU)
         std::vector< AccelerometerRuntimeInfo > accelerometersReferenceIndeces;
-
+        std::vector< GyroscopeRuntimeInfo > gyroscopesReferenceIndeces;
 
 
         //ControlBoard oriented sensors
@@ -177,11 +178,15 @@ namespace yarpWbi
         bool loadAccelerometerInfoFromConfig(const yarp::os::Searchable & opts,
                                         const wbi::IDList & list,
                                         std::vector<AccelerometerConfigurationInfo> & infos);
+        bool loadGyroscopeInfoFromConfig(const yarp::os::Searchable & opts,
+                                        const wbi::IDList & list,
+                                        std::vector<GyroscopeConfigurationInfo> & infos);
 
         //Indipendent sensors
         bool openImu(const int id, const std::string & port_name);
         bool openFTsens(const int id, const std::string & port_name);
         bool openAccelerometer(const int id, const AccelerometerConfigurationInfo & info);
+        bool openGyroscope(const int id, const GyroscopeConfigurationInfo & info);
 
         bool convertIMU(double * wbi_inertial_readings, const double * yarp_inertial_readings);
 
@@ -192,14 +197,16 @@ namespace yarpWbi
         virtual bool readFTsensor(const int id, double *ftSens, double *stamps=0, bool wait=true);
         virtual bool readTorqueSensor(const int id, double *jointTorque, double *stamps=0, bool wait=true);
         virtual bool readAccelerometer(const int id, double *acc, double *stamps=0, bool wait=true);
-
+        virtual bool readGyroscope(const int id, double *gyro, double *stamps=0, bool wait=true);
+        
         virtual bool readEncoders(const EncoderType st, double *data, double *stamps=0, bool wait=true);
         virtual bool readPwms(double *pwm, double *stamps=0, bool wait=true);
         virtual bool readIMUs(double *inertial, double *stamps=0, bool wait=true);
         virtual bool readFTsensors(double *ftSens, double *stamps=0, bool wait=true);
         virtual bool readTorqueSensors(double *jointTorques, double *stamps=0, bool wait=true);
         virtual bool readAccelerometers(double *accs, double *stamps=0, bool wait=true);
-
+        virtual bool readGyroscopes(double *gyros, double *stamps=0, bool wait=true);
+        
         bool getEncodersPosSpeedAccTimed(const EncoderType st, yarp::dev::IEncodersTimed* ienc, double *encs, double *time);
 
     public:
