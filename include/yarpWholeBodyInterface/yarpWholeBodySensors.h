@@ -72,6 +72,7 @@ namespace yarpWbi
     struct AccelerometerRuntimeInfo
     {
         AccelerometerType type;
+        std::string sensor_urdf_name;
         int runtime_index;
         std::string port_name;
         int data_index; // index in multi-data ports where accelerometer data begins
@@ -95,6 +96,7 @@ namespace yarpWbi
     struct GyroscopeRuntimeInfo
     {
         GyroscopeType type;
+        std::string sensor_urdf_name;
         int runtime_index;
         std::string port_name;
         int data_index; // index in multi-data ports where gyroscope data begins
@@ -303,6 +305,11 @@ namespace yarpWbi
          * @return The number of sensors of the specified type. */
         virtual int getSensorNumber(const wbi::SensorType st);
 
+        /**
+         * Get the names of all the added sensors of specified type. Current implementation is valid for Accelerometers and Gyroscopes
+         * @return A vector containing sensor names
+         */
+        virtual std::vector<std::string> getSensorNames(const wbi::SensorType st); 
         /**
          * Read the specified sensor.
          * @param st Type of sensor to read.
