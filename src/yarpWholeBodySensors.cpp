@@ -74,7 +74,14 @@ bool yarpWholeBodySensors::init()
                                                                sensorIdList[wbi::SENSOR_FORCE_TORQUE].size() << " F/T sensors " <<
                                                                sensorIdList[wbi::SENSOR_IMU].size() << " IMUs " << std::endl;
     #endif
-
+    std::cout << "[INFO] yarpWholeBodySensors: initializing with " << sensorIdList[wbi::SENSOR_ENCODER_POS].size() << " encoders " <<
+                                                               sensorIdList[wbi::SENSOR_PWM].size() << " pwm sensors " <<
+                                                               sensorIdList[wbi::SENSOR_FORCE_TORQUE].size() << " F/T sensors " <<
+                                                               sensorIdList[wbi::SENSOR_IMU].size() << " IMUs " <<
+                                                               sensorIdList[wbi::SENSOR_ACCELEROMETER].size() << " Accelerometers " <<
+                                                               sensorIdList[wbi::SENSOR_GYROSCOPE].size() << " Gyroscopes " <<
+                                                               std::endl;
+   
 
     //Loading configuration
     if( wbi_yarp_properties.check("robot") )
@@ -164,35 +171,35 @@ bool yarpWholeBodySensors::init()
     bool ret = this->loadAccelerometerInfoFromConfig(wbi_yarp_properties,sensorIdList[wbi::SENSOR_ACCELEROMETER],acc_infos);
     if( ! ret || sensorIdList[wbi::SENSOR_ACCELEROMETER].size() != acc_infos.size()  )
     {
-        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of IMU and FT sensors." << std::endl;
+        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of Accelerometer sensors." << std::endl;
+        std::cerr<<"Sensor List : "<<sensorIdList[wbi::SENSOR_ACCELEROMETER].size()<<", acc_infos: "<<acc_infos.size();
         return false;
     }
 
-    for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
-    {
-        switch(acc_infos[acc_index].type)
-        {
-            case IMU_ACCL:
-                //std::cout << "[INFO] adding imu " << acc_infos[acc_index].type_option << std::endl;
-                sensorIdList[SENSOR_IMU].addID(acc_infos[acc_index].type_option);
-                break;
-            case MTB_ACCL:
-                break;
-            default : 
-                break;
-        }
-    }
+//     for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
+//     {
+//         switch(acc_infos[acc_index].type)
+//         {
+//             case IMU_ACCL:
+//                 //std::cout << "[INFO] adding imu " << acc_infos[acc_index].type_option << std::endl;
+//                 sensorIdList[SENSOR_IMU].addID(acc_infos[acc_index].type_option);
+//                 break;
+//             case MTB_ACCL:
+//                 break;
+//             default : 
+//                 break;
+//         }
+//     }
 
-    //Load gyroscopes information: this is tricky
-    //as depending on the gyroscope type we have to add some IMU to the system
+    //Load gyroscopes information
     std::vector< GyroscopeConfigurationInfo > gyro_infos;
     ret = this->loadGyroscopeInfoFromConfig(wbi_yarp_properties,sensorIdList[wbi::SENSOR_GYROSCOPE],gyro_infos);
-    if( ! ret || sensorIdList[wbi::SENSOR_GYROSCOPE].size() != gyro_infos.size()  )
-    {
-        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of IMU and FT sensors." << std::endl;
-        return false;
-    }
-
+//     if( ! ret || sensorIdList[wbi::SENSOR_GYROSCOPE].size() != gyro_infos.size()  )
+//     {
+//         std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of IMU and FT sensors." << std::endl;
+//         return false;
+//     }
+/*
     for(int gyro_index = 0; gyro_index < (int)sensorIdList[wbi::SENSOR_GYROSCOPE].size(); gyro_index++)
     {
         switch(gyro_infos[gyro_index].type)
@@ -206,15 +213,20 @@ bool yarpWholeBodySensors::init()
             default : 
                 break;
         }
-    }
+    }*/
     
     //Load imu and ft sensors information
     std::vector<string> imu_ports, ft_ports;
     ret = loadFTSensorPortsFromConfig(wbi_yarp_properties,sensorIdList[wbi::SENSOR_FORCE_TORQUE],ft_ports);
+    if( ! ret )
+    {
+        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of FT sensors." << std::endl;
+        return false;
+    }    
     ret = ret && loadIMUSensorPortsFromConfig(wbi_yarp_properties,sensorIdList[wbi::SENSOR_IMU],imu_ports);
     if( ! ret )
     {
-        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of IMU and FT sensors." << std::endl;
+        std::cerr << "[ERR] yarpWholeBodySensors::init() error: failing in loading configuration of IMU sensors." << std::endl;
         return false;
     }
 
@@ -268,6 +280,7 @@ bool yarpWholeBodySensors::init()
     for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
     {
             initDone = initDone && openAccelerometer(acc_index,acc_infos[acc_index]);
+            std::cout<<"------------------Acc index of opened acc : "<<acc_index<<"\n";
     }
 
     int nrOfGyroSensors = sensorIdList[wbi::SENSOR_GYROSCOPE].size();
@@ -275,14 +288,13 @@ bool yarpWholeBodySensors::init()
     gyroStampLastRead.resize(nrOfGyroSensors);
     gyroscopesReferenceIndeces.resize(nrOfGyroSensors);
 
-    for(int gyro_index = 0; gyro_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); gyro_index++)
-    {
-            initDone = initDone && openGyroscope(gyro_index,gyro_infos[gyro_index]);
-    }
     for(int gyro_index = 0; gyro_index < (int)sensorIdList[wbi::SENSOR_GYROSCOPE].size(); gyro_index++)
     {
             initDone = initDone && openGyroscope(gyro_index,gyro_infos[gyro_index]);
     } 
+    mtbLastRead.resize(openedMTBPorts.size());
+    mtbStampLastRead.resize(openedMTBPorts.size());
+    
     
     if( !initDone )
     {
@@ -384,6 +396,58 @@ int yarpWholeBodySensors::addSensors(const SensorType st, const IDList &sids)
     }
 }
 
+
+int yarpWholeBodySensors::addAllSensors(const SensorType st)
+{
+    // Current implementation only takes into account Accelerometers and Gyroscopes
+    // Method parses config for the appropriate group and loads the info into the SensorIDList
+    
+    std::string sensor_info_group_name;
+    
+    switch(st)
+    {
+        case wbi::SENSOR_ACCELEROMETER :
+            sensor_info_group_name = std::string("WBI_YARP_ACCELEROMETERS");
+            
+            break;
+        case wbi::SENSOR_GYROSCOPE : 
+            sensor_info_group_name = std::string("WBI_YARP_GYROSCOPES");
+            
+            break;
+        default : // To be implemented in future (other sensors from config files)
+            break;
+    }
+    
+    yarp::os::Bottle info_lists = wbi_yarp_properties.findGroup(sensor_info_group_name);
+    if( info_lists.isNull() || info_lists.size() == 0 ) {
+        std::cout << "[ERR] yarpWbi::addAllSensors error: group "
+                      << sensor_info_group_name.c_str() << " not found or empty in yarpWholeBodyInterface configuration file."  << std::endl;
+        return 0;
+    }
+    
+//     list.resize(info_list.size());
+//     std::cout<<"--------------------\nNum SENSORs in config (info_list): "<<info_lists.size()<<"\n";
+//     std::cout<<"--------------------\nSensor in info_list : "<<info_lists.toString()<<"\n";
+    
+    for(int temp = 1; temp<info_lists.size();temp++)
+    {
+        Bottle *tempBottle = info_lists.get(temp).asList();
+        std::string idName = (tempBottle->get(0)).asString();
+//         std::cout<<"----------------------\n Bottle first item "<<idName<<" Sensor ID\n";
+        std::string portName = (tempBottle->get(1)).asString();
+//         std::cout<<"----------------------\n Bottle second item "<<portName<<" Sensor port\n";   
+        int offset = (tempBottle->get(2)).asInt();
+//         std::cout<<"----------------------\n Bottle third item "<<offset<<" Port offset\n";   
+        sensorIdList[st].addID(wbi::ID(idName));
+    }
+    
+//     std::cout<<"---------------------------\n Finishined adding new IDs \n-------------------------\n";
+    
+    return(0);
+    
+}
+
+
 bool yarpWholeBodySensors::removeSensor(const SensorType st, const ID &sid)
 {
     return false;
@@ -425,6 +489,7 @@ bool yarpWholeBodySensors::readSensor(const SensorType st, const int sid, double
     case SENSOR_FORCE_TORQUE:   return readFTsensor(sid, data, stamps, blocking);
     case SENSOR_TORQUE:         return readTorqueSensor(sid, data, stamps, blocking);
     case SENSOR_ACCELEROMETER:  return readAccelerometer(sid, data, stamps, blocking);
+    case SENSOR_GYROSCOPE:      return readGyroscope(sid, data, stamps, blocking);
     default: break;
     }
     return false;
@@ -504,6 +569,7 @@ bool yarpWholeBodySensors::openPwm(const int bp)
     return true;
 }
 
+
 bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opts, const IDList& list, vector< AccelerometerConfigurationInfo >& infos)
 {
     
@@ -522,42 +588,53 @@ bool yarpWholeBodySensors::loadAccelerometerInfoFromConfig(const Searchable& opt
             return false;
         }
     }
-    infos.resize(info_lists.size());
-  
-//     list.resize(info_list.size());
-    std::cout<<"--------------------\nAccelerometers in config (info_list): "<<info_lists.size()<<"\n";
-    //std::cout<<"
-    std::cout<<"--------------------\nAccelerometer list size (list):"<<list.size()<<"\n";
-    
-    
+    infos.resize(list.size());
 
-    for(int acc_index = 0; acc_index < (int)info_lists.size(); acc_index++ )
+//     list.resize(info_list.size());
+//     std::cout<<"--------------------\nNum Accelerometers in config (info_list): "<<info_lists.size()<<"\n";
+// 
+//     std::cout<<"--------------------\nAccelerometer in info_list : "<<info_lists.toString()<<"\n";
+//     std::cout<<"--------------------\nNum Accelerometer list size (list):"<<list.size()<<"\n";
+//     
+//     for(int temp = 0; temp<info_lists.size();temp++)
+//     {
+//         Value tempVal = info_lists.get(temp);
+//         std::cout<<"--------------------\ninfo_list Bootle contents "<<temp<<" : "<<tempVal.toString()<<"\n";
+//     }
+    
+    std::cout<<"-----------------------\nRecovering IDList IDs and lookinf for rest of info in list of size "<<list.size()<<"\n";
+    for(int acc_index =0; acc_index < (int)list.size(); acc_index++ )
     {
         wbi::ID acc_ID;
         list.indexToID(acc_index,acc_ID);
-        std::cout <<"----------------\n"<< acc_ID.toString() << std::endl;
-        yarp::os::Bottle * port = info_lists.find(acc_ID.toString()).asList();
-        //std::cout <<"----------------\n"<< port->toString() << std::endl;
-        if( port == NULL
-            || port->size() != 2
-            || !(port->get(0).isString())
-            || !(port->get(1).isString()) )
+        std::cout <<"---------------- AccID : "<< acc_ID.toString() << std::endl;
+        yarp::os::Bottle * sensorInfo = info_lists.find(acc_ID.toString()).asList();
+        std::cout <<"---------------- Acc contents"<< sensorInfo->toString() << std::endl;
+        if( sensorInfo == NULL
+            || sensorInfo->size() != 3
+            || !(sensorInfo->get(0).isString())
+            || !(sensorInfo->get(1).isInt())
+            || !(sensorInfo->get(2).isString()) )
         {
             std::cout << "yarpWbi::loadAccelerometerInfoFromConfig error: " << info_lists.toString() << " has a malformed element" << std::endl;
             return false;
         }
-        std::string accelerometer_type = port->get(0).asString();
-        std::string accelerometer_type_option = port->get(1).asString();
-        std::cout<<"--------------------\naccelerometer port was "<<port->get(1).asString()<<"\n";
+        infos[acc_index].port_name = std::string("/icub/" ) + 
+                                                sensorInfo->get(0).asString() +
+                                                std::string("/inertialMTB");
+        infos[acc_index].data_index = sensorInfo->get(1).asInt();
+        std::string accelerometer_type = sensorInfo->get(2).asString();
+        std::cout<<"--------------------\naccelerometer port : "<<infos[acc_index].port_name.c_str()<<
+                                                 ", data idx :"<<infos[acc_index].data_index<<"\n";
         if( accelerometer_type == "imu" )
         {
             infos[acc_index].type = IMU_ACCL;
-            infos[acc_index].type_option = accelerometer_type_option;
+            infos[acc_index].type_option = accelerometer_type;
         } // incorporate the MTB Accelerometers
         else if ( accelerometer_type == "mtb")
         {
             infos[acc_index].type = MTB_ACCL;
-            infos[acc_index].type_option = accelerometer_type_option;
+            infos[acc_index].type_option = accelerometer_type;
         }
         else
         {
@@ -636,11 +713,12 @@ bool yarpWholeBodySensors::loadGyroscopeInfoFromConfig(const Searchable& opts, c
 bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const AccelerometerConfigurationInfo & info)
 {
     bool ret = true;
+                int reference_sensor_index;
     switch( info.type )
     {
         case IMU_ACCL:
-            int reference_imu_sensor_index;
-            ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_imu_sensor_index);
+
+            ret = sensorIdList[SENSOR_IMU].idToIndex(info.type_option,reference_sensor_index);
             if( !ret )
             {
                 std::cerr << "yarpWholeBodySensors::openAccelerometer :  impossible to find IMU "
@@ -648,7 +726,23 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
                 return false;
             }
             accelerometersReferenceIndeces[acc_index].type = info.type;
-            accelerometersReferenceIndeces[acc_index].type_reference_index = reference_imu_sensor_index;
+            accelerometersReferenceIndeces[acc_index].runtime_index = reference_sensor_index;
+            break;
+        case MTB_ACCL:
+//             int reference_mtb_sensor_index;
+//             ret = sensorIdList[SENSOR_IMU].idToIndex(info.data_index,reference_imu_sensor_index);
+                //allocate lastRead variables
+            ret = openMTBSensor(info.port_name);
+            accLastRead[acc_index].resize(sensorTypeDescriptions[SENSOR_ACCELEROMETER].dataSize,0.0);
+            accStampLastRead[acc_index] = INITIAL_TIMESTAMP;
+            
+            accelerometersReferenceIndeces[acc_index].type = info.type;
+            accelerometersReferenceIndeces[acc_index].data_index = info.data_index;
+            accelerometersReferenceIndeces[acc_index].runtime_index = portsMTBSensors.size()-1;
+           // ret = sensorIdList[SENSOR_ACCELEROMETER].idToIndex(info.type_option,reference_sensor_index);
+            //accelerometersReferenceIndeces[acc_index].runtime_index = reference_sensor_index;
+            
+            
             break;
         default:
             std::cerr << "yarpWholeBodySensors::openAccelerometer : unknown accelerometer type (only known type is IMU_STYLE: " << IMU_ACCL << " )"
@@ -692,6 +786,45 @@ bool yarpWholeBodySensors::openImu(const int numeric_id, const std::string & por
     imuLastRead[numeric_id].resize(sensorTypeDescriptions[SENSOR_IMU].dataSize,0.0);
     imuStampLastRead[numeric_id] = INITIAL_TIMESTAMP;
 
+    return true;
+}
+
+bool yarpWholeBodySensors::openMTBSensor(const std::string & remotePort)
+{
+    stringstream localPort;
+    
+    // TODO : check portsMTBSensors if this sensors port is already opened. This is because multiple MTB sensors use few remote ports
+    for (std::vector<std::string>::iterator it = openedMTBPorts.begin(); it!=openedMTBPorts.end();it++)
+    {
+        if(remotePort.compare(*it) == 0)
+        {
+            // remotePort has already been added 
+            std::cout<<"--------------Remote port : "<<remotePort.c_str()<<" has already been opened \n";
+            return true;
+        }
+    }
+    
+    std::cout<<"-------------Trying to open a port to :"<<remotePort.c_str()<<"\n";
+    int numeric_id = portsMTBSensors.size();
+    localPort << "/" << name << "/mtb_sensor/" <<  numeric_id << ":i";
+    portsMTBSensors.push_back(new BufferedPort<Vector>());    
+    
+        
+    if(!portsMTBSensors[numeric_id]->open(localPort.str().c_str())) { // open local input port
+        std::cerr << "yarpWholeBodySensors::openMTBSensors(): Open of localPort " << localPort.str() << " failed " << std::endl;
+        return false;
+    }
+    if(!Network::exists(remotePort.c_str())) {       // check remote output port exists
+        std::cerr << "yarpWholeBodySensors::openMTBSensors():  " << remotePort << " does not exist " << std::endl;
+        return false;
+    }
+    if(!Network::connect(remotePort.c_str(), localPort.str().c_str(), "udp", true)) {  // connect remote to local port
+        std::cerr << "yarpWholeBodySensors::openImu():  could not connect " << remotePort << " to " << localPort.str() << std::endl;
+        return false;
+    }
+    openedMTBPorts.push_back(remotePort);
+    
+    std::cout<<"-----------------Remote port "<<remotePort<<" exists and connected to "<<localPort.str().c_str()<<"\n";
     return true;
 }
 
@@ -876,9 +1009,13 @@ bool yarpWholeBodySensors::readPwms(double *pwm, double *stamps, bool wait)
 bool yarpWholeBodySensors::readAccelerometers(double *accs, double *stamps, bool wait)
 {
     bool ret = true;
+    std::cout<<"Reading accelerometer from list of size : "<<(int)sensorIdList[SENSOR_ACCELEROMETER].size()<<"...\n\n";
     for(int i=0; i < (int)sensorIdList[SENSOR_ACCELEROMETER].size(); i++)
     {
-        ret = ret && this->readAccelerometer(i,accs+(sensorTypeDescriptions[SENSOR_ACCELEROMETER].dataSize)*i,stamps+i,wait);
+        if(stamps!=0)
+            ret = ret && this->readAccelerometer(i,accs+(sensorTypeDescriptions[SENSOR_ACCELEROMETER].dataSize)*i,stamps+i,wait);
+        else
+            ret = ret && this->readAccelerometer(i,accs+(sensorTypeDescriptions[SENSOR_ACCELEROMETER].dataSize)*i,stamps,wait);
     }
     return ret;
 }
@@ -913,6 +1050,7 @@ bool yarpWholeBodySensors::readIMUs(double *inertial, double *stamps, bool wait)
     }
     return true;
 }
+
 
 bool yarpWholeBodySensors::readFTsensors(double *ftSens, double *stamps, bool wait)
 {
@@ -1074,35 +1212,75 @@ bool yarpWholeBodySensors::convertIMU(double * wbi_imu_readings, const double * 
 
 bool yarpWholeBodySensors::readAccelerometer(const int accelerometer_index, double *acc, double *stamps, bool wait)
 {
+//     std::cout<<"----------------Trying to read accelerometer\n";
     bool ret = true;
     if( accelerometer_index >= (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size() || accelerometer_index < 0 )
     {
         return false;
     }
-
-    int accelerometer_imu_index;
+//     std::cout<<"----------------reference index size :"<<accelerometersReferenceIndeces.size()<<"\n";
+//     std::cout<<"----------------mtb last read size :"<<mtbLastRead.size()<<"\n";
+    int accelerometer_runtime_index;
     switch(accelerometersReferenceIndeces[accelerometer_index].type)
     {
         case IMU_ACCL : 
-            accelerometer_imu_index = accelerometersReferenceIndeces[accelerometer_index].type_reference_index;
+            accelerometer_runtime_index = accelerometersReferenceIndeces[accelerometer_index].runtime_index;
 
             // Process IMU accelerometer data
             if( stamps != 0 )
             {
-                *stamps = imuStampLastRead[accelerometer_imu_index];
+                *stamps = imuStampLastRead[accelerometer_runtime_index];
             }
 
-            acc[0] = imuLastRead[accelerometer_imu_index][4];
-            acc[1] = imuLastRead[accelerometer_imu_index][5];
-            acc[2] = imuLastRead[accelerometer_imu_index][6];
+            acc[0] = imuLastRead[accelerometer_runtime_index][4];
+            acc[1] = imuLastRead[accelerometer_runtime_index][5];
+            acc[2] = imuLastRead[accelerometer_runtime_index][6];
             ret = true;
             break;
+//             
         case MTB_ACCL : 
             // Process MTB accelerometer data
+            accelerometer_runtime_index = accelerometersReferenceIndeces[accelerometer_index].runtime_index;
+            // Process IMU accelerometer data
+            
+            yarp::sig::Vector *vt;// = portsMTBSensors[accelerometer_runtime_index]->read(wait);
+            vt = portsMTBSensors[accelerometer_runtime_index]->read(wait);
+    
+//             std::cout<<"----------------Made a read on the port\n";
+//             std::cout<<"MTBLastRead size : "<<mtbLastRead.size()<<", accelerometer_runtime_index = "<<accelerometer_runtime_index<<"\n";
+//             std::cout<<"VT size: "<<vt->size()<<"\n";
+            if(vt!=NULL) {
+                if(mtbLastRead[accelerometer_runtime_index].size()==0)
+                {
+//                     std::cout<<" Trying to reset MTBLastRead size \n";
+                    mtbLastRead[accelerometer_runtime_index].resize(vt->size(),0.0);
+                }
+//                 std::cout<<"MTBLastRead size : "<<mtbLastRead[accelerometer_runtime_index].size()<<", data vt size :"<<vt->size()<<"\n";
+                mtbLastRead[accelerometer_runtime_index] = *vt;
+                yarp::os::Stamp info;
+                portsMTBSensors[accelerometer_runtime_index]->getEnvelope(info);
+                mtbStampLastRead[accelerometer_runtime_index] = info.getTime();
+            }
+            if( stamps != 0 )
+            {
+                *stamps = mtbStampLastRead[accelerometer_runtime_index];
+            }
+//             std::cout<<"Reached here\n";
+//             std::cout<<"------------ Read data size :"<<mtbLastRead[accelerometer_runtime_index].toString();
+//             std::cout<<"------------ Read Accelerometer Data : \n"<<vt->toString()<<", at"<<mtbStampLastRead[accelerometer_index]<<"\n";
+            int mtb_first_data_index;
+            mtb_first_data_index = accelerometersReferenceIndeces[accelerometer_index].data_index-1;
+            double *tempData;
+            tempData = mtbLastRead[accelerometer_runtime_index].data();
+            acc[0] = tempData[mtb_first_data_index];//mtbLastRead[accelerometer_imu_index][]
+            acc[1] = tempData[mtb_first_data_index+1];//TODO correct index!
+            acc[2] = tempData[mtb_first_data_index+2];//
             ret = true;
             break;
+//             
         default : 
             ret = false;
+            break;
     }
     return ret;
 }
