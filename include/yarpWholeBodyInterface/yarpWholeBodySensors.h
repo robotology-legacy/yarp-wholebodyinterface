@@ -109,7 +109,7 @@ namespace yarpWbi
      * You can configure this object with a yarp::os::Property object, that you can
      * pass to the constructor. Alternativly you can set the Property through the setYarpWbiProperties method,
      * but in that case you have to set the property before calling the init method.
-     * 
+     *
      *
      */
     class yarpWholeBodySensors: public wbi::iWholeBodySensors
@@ -166,7 +166,7 @@ namespace yarpWbi
         std::vector<double>  gyroStampLastRead;
         std::vector<yarp::sig::Vector>  mtbLastRead;
         std::vector<double>  mtbStampLastRead;
-        
+
         // yarp interfaces (the "key" of these vector is wbi numeric controlboard id
         std::vector<yarp::dev::IEncodersTimed*>       ienc;   // interface to read encoders
         std::vector<yarp::dev::IOpenLoopControl*>     iopl;   // interface to read motor PWM
@@ -180,7 +180,7 @@ namespace yarpWbi
 
         std::vector< yarp::os::BufferedPort<yarp::sig::Vector>*>   portsMTBSensors; // Accelerometer and Gyroscopes
         std::vector< std::string> openedMTBPorts;
-        
+
         // reference to other sensor (for non MTB type accelerometers we always get their information
         //  from another sensor, such as the IMU)
         std::vector< AccelerometerRuntimeInfo > accelerometersReferenceIndeces;
@@ -206,7 +206,7 @@ namespace yarpWbi
         bool openAccelerometer(const int id, const AccelerometerConfigurationInfo & info);
         bool openGyroscope(const int id, const GyroscopeConfigurationInfo & info);
         bool openMTBSensor(const std::string & portName);
-        
+
         bool convertIMU(double * wbi_inertial_readings, const double * yarp_inertial_readings);
 
 
@@ -217,7 +217,7 @@ namespace yarpWbi
         virtual bool readTorqueSensor(const int id, double *jointTorque, double *stamps=0, bool wait=true);
         virtual bool readAccelerometer(const int id, double *acc, double *stamps=0, bool wait=true);
         virtual bool readGyroscope(const int id, double *gyro, double *stamps=0, bool wait=true);
-        
+
         virtual bool readEncoders(const EncoderType st, double *data, double *stamps=0, bool wait=true);
         virtual bool readPwms(double *pwm, double *stamps=0, bool wait=true);
         virtual bool readIMUs(double *inertial, double *stamps=0, bool wait=true);
@@ -225,9 +225,9 @@ namespace yarpWbi
         virtual bool readTorqueSensors(double *jointTorques, double *stamps=0, bool wait=true);
         virtual bool readAccelerometers(double *accs, double *stamps=0, bool wait=true);
         virtual bool readGyroscopes(double *gyros, double *stamps=0, bool wait=true);
-        
+
 //         virtual bool readAllMTBsensors(double *mtb, double *stamps =0,bool wait= true);
-        
+
         bool getEncodersPosSpeedAccTimed(const EncoderType st, yarp::dev::IEncodersTimed* ienc, double *encs, double *time);
 
     public:
@@ -256,13 +256,6 @@ namespace yarpWbi
          */
         virtual bool getYarpWbiProperties(yarp::os::Property & yarp_wbi_properties);
 
-//         /**
-//          * @return True if sensors has been added, false otherwise (e.g. the sensor has been already added).
-//          */
-//         virtual bool addMTBSensor(void);
-        
-        
-        
         /**
          * Add the specified sensor so that it can be read.
          * @param st Type of sensor.
@@ -273,14 +266,14 @@ namespace yarpWbi
 
         /**
          * Add the specified sensors so that they can be read.
-         * @param st Type of sensors.
+         * @param st Type of fsensors.
          * @param sids Ids of the sensors.
          * @return True if the sensor has been added, false otherwise (e.g. the sensor has been already added).
          */
         virtual int addSensors(const wbi::SensorType st, const wbi::IDList &sids);
 
                 /**
-         * Add all possible specified sensors so that they can be read. Current version implements Accelerometers as created from config.
+         * Add all possible specified sensors (from config file) so that they can be read. Current version implements Accelerometers and Gyroscopes as created from config.
          * @param st Type of sensors. IDs will be generated automatically.
          * @return True if the sensor has been added, false otherwise (e.g. the sensor has been already added).
          */
@@ -309,7 +302,7 @@ namespace yarpWbi
          * Get the names of all the added sensors of specified type. Current implementation is valid for Accelerometers and Gyroscopes
          * @return A vector containing sensor names
          */
-        virtual std::vector<std::string> getSensorNames(const wbi::SensorType st); 
+        virtual std::vector<std::string> getSensorNames(const wbi::SensorType st);
         /**
          * Read the specified sensor.
          * @param st Type of sensor to read.
