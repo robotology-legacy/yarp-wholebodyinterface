@@ -213,7 +213,6 @@ bool yarpWholeBodySensors::init()
     imuStampLastRead.resize(nrOfImuSensors);
     portsIMU.resize(nrOfImuSensors);
 
-
     for(int ft_numeric_id = 0; ft_numeric_id < (int)sensorIdList[wbi::SENSOR_FORCE_TORQUE].size(); ft_numeric_id++)
     {
             initDone = initDone && openFTsens(ft_numeric_id,ft_ports[ft_numeric_id]);
@@ -241,11 +240,15 @@ bool yarpWholeBodySensors::init()
     accStampLastRead.resize(nrOfAccSensors);
     accelerometersReferenceIndeces.resize(nrOfAccSensors);
 
+    #ifndef NDEBUG
     std::cout<<"--------------------\nAccelerometers in config : "<<nrOfAccSensors<<"\n";
+    # endif
     for(int acc_index = 0; acc_index < (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size(); acc_index++)
     {
             initDone = initDone && openAccelerometer(acc_index,acc_infos[acc_index]);
+            #ifndef NDEBUG
             std::cout<<"------------------Acc index of opened acc : "<<acc_index<<"\n";
+            #endif
     }
 
     int nrOfGyroSensors = sensorIdList[wbi::SENSOR_GYROSCOPE].size();
@@ -629,7 +632,7 @@ bool yarpWholeBodySensors::loadGyroscopeInfoFromConfig(const Searchable& opts, c
         {
             infos[gyro_index].type = IMU_GYRO;
             infos[gyro_index].type_option = gyroscope_type;
-        } // incorporate the MTB Accelerometers
+        }
         else if ( gyroscope_type == "mtb")
         {
             infos[gyro_index].type = MTB_GYRO;
@@ -663,9 +666,6 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
             accelerometersReferenceIndeces[acc_index].runtime_index = reference_sensor_index;
             break;
         case MTB_ACCL:
-//             int reference_mtb_sensor_index;
-//             ret = sensorIdList[SENSOR_IMU].idToIndex(info.data_index,reference_imu_sensor_index);
-                //allocate lastRead variables
             ret = openMTBSensor(info.port_name);
             accLastRead[acc_index].resize(sensorTypeDescriptions[SENSOR_ACCELEROMETER].dataSize,0.0);
             accStampLastRead[acc_index] = INITIAL_TIMESTAMP;
@@ -674,8 +674,6 @@ bool yarpWholeBodySensors::openAccelerometer(const int acc_index, const Accelero
             accelerometersReferenceIndeces[acc_index].data_index = info.data_index;
             accelerometersReferenceIndeces[acc_index].sensor_urdf_name = info.sensor_urdf_name;
             accelerometersReferenceIndeces[acc_index].runtime_index = portsMTBSensors.size()-1;
-           // ret = sensorIdList[SENSOR_ACCELEROMETER].idToIndex(info.type_option,reference_sensor_index);
-            //accelerometersReferenceIndeces[acc_index].runtime_index = reference_sensor_index;
 
 
             break;
@@ -879,7 +877,6 @@ vector< std::string > yarpWholeBodySensors::getSensorNames(const SensorType st)
 bool yarpWholeBodySensors::getEncodersPosSpeedAccTimed(const EncoderType st, yarp::dev::IEncodersTimed* ienc, double *encs, double *time)
 {
     bool result = ienc->getEncodersTimed(encs, time);
-//    bool result = true;
     switch (st) {
         case ENCODER_POS:          return result;// ienc->getEncodersTimed(encs, time);
         case ENCODER_SPEED:        return result && ienc->getEncoderSpeeds(encs);// getEncodersTimed(encs, time);
@@ -890,7 +887,6 @@ bool yarpWholeBodySensors::getEncodersPosSpeedAccTimed(const EncoderType st, yar
 
 bool yarpWholeBodySensors::readEncoders(const EncoderType st, double *data, double *stamps, bool wait)
 {
-    //std::cout << "|||||||||| Read encoders " << std::endl;
     double dataTemp[MAX_NJ], tTemp[MAX_NJ];
     bool res = true, update=false;
 
@@ -899,13 +895,11 @@ bool yarpWholeBodySensors::readEncoders(const EncoderType st, double *data, doub
         ctrlBoard != encoderControlBoardList.end(); ctrlBoard++ )
     {
         // read data
-        // std::cout << "|||||||||| getEncodersTimed " << std::endl;
         dataTemp[0] = -10.0;
         dataTemp[1] = -10.0;
         double waiting_time = 0;
         while( !(update=getEncodersPosSpeedAccTimed(st, ienc[*ctrlBoard], dataTemp, tTemp)) && wait)
         {
-            //std::cout << "waitign " << dataTemp[0] << " " << dataTemp[1] << std::endl;
             Time::delay(WAIT_TIME);
             waiting_time += WAIT_TIME;
 
@@ -921,7 +915,6 @@ bool yarpWholeBodySensors::readEncoders(const EncoderType st, double *data, doub
         {
             for(int axis=0; axis < (int)qLastRead[*ctrlBoard].size(); axis++ )
             {
-                //std::cout << "read dataTemp : " << dataTemp[axis] << std::endl;
                 qLastRead[*ctrlBoard][axis] = yarpWbi::Deg2Rad*dataTemp[axis];
                 qStampLastRead[*ctrlBoard][axis] = tTemp[axis];
             }
@@ -1001,7 +994,6 @@ bool yarpWholeBodySensors::readPwms(double *pwm, double *stamps, bool wait)
 bool yarpWholeBodySensors::readAccelerometers(double *accs, double *stamps, bool wait)
 {
     bool ret = true;
-//     std::cout<<"Reading accelerometer from list of size : "<<(int)sensorIdList[SENSOR_ACCELEROMETER].size()<<"...\n\n";
     for(int i=0; i < (int)sensorIdList[SENSOR_ACCELEROMETER].size(); i++)
     {
         if(stamps!=0)
@@ -1143,7 +1135,6 @@ bool yarpWholeBodySensors::readEncoder(const EncoderType st, const int encoder_n
     {
           for(int axis=0; axis < (int)qLastRead[encoderCtrlBoard].size(); axis++ )
           {
-                //std::cout << "read dataTemp : " << dataTemp[axis] << std::endl;
                 qLastRead[encoderCtrlBoard][axis] = yarpWbi::Deg2Rad*dataTemp[axis];
                 qStampLastRead[encoderCtrlBoard][axis] = tTemp[axis];
           }
@@ -1207,14 +1198,11 @@ bool yarpWholeBodySensors::convertIMU(double * wbi_imu_readings, const double * 
 
 bool yarpWholeBodySensors::readAccelerometer(const int accelerometer_index, double *acc, double *stamps, bool wait)
 {
-//     std::cout<<"----------------Trying to read accelerometer\n";
     bool ret = true;
     if( accelerometer_index >= (int)sensorIdList[wbi::SENSOR_ACCELEROMETER].size() || accelerometer_index < 0 )
     {
         return false;
     }
-//     std::cout<<"----------------reference index size :"<<accelerometersReferenceIndeces.size()<<"\n";
-//     std::cout<<"----------------mtb last read size :"<<mtbLastRead.size()<<"\n";
     int accelerometer_runtime_index;
     switch(accelerometersReferenceIndeces[accelerometer_index].type)
     {
@@ -1272,19 +1260,16 @@ bool yarpWholeBodySensors::readAccelerometer(const int accelerometer_index, doub
 
 bool yarpWholeBodySensors::readGyroscope(const int gyroscope_index, double *gyro, double *stamps, bool wait)
 {
-//     std::cout<<"----------------Trying to read gyroscope\n";
     bool ret = true;
     if( gyroscope_index >= (int)sensorIdList[wbi::SENSOR_GYROSCOPE].size() || gyroscope_index < 0 )
     {
         return false;
     }
-//     std::cout<<"----------------reference index size :"<<accelerometersReferenceIndeces.size()<<"\n";
-//     std::cout<<"----------------mtb last read size :"<<mtbLastRead.size()<<"\n";
     int gyroscope_runtime_index;
-    switch(accelerometersReferenceIndeces[gyroscope_index].type)
+    switch(gyroscopesReferenceIndeces[gyroscope_index].type)
     {
         case IMU_GYRO :
-            gyroscope_runtime_index = accelerometersReferenceIndeces[gyroscope_index].runtime_index;
+            gyroscope_runtime_index = gyroscopesReferenceIndeces[gyroscope_index].runtime_index;
 
             // Process IMU accelerometer data
             if( stamps != 0 )
@@ -1297,13 +1282,12 @@ bool yarpWholeBodySensors::readGyroscope(const int gyroscope_index, double *gyro
             gyro[2] = imuLastRead[gyroscope_runtime_index][9];
             ret = true;
             break;
-//
+
         case MTB_GYRO :
             // Process MTB gyroscope data
-            gyroscope_runtime_index = accelerometersReferenceIndeces[gyroscope_index].runtime_index;
+            gyroscope_runtime_index = gyroscopesReferenceIndeces[gyroscope_index].runtime_index;
+            yarp::sig::Vector *vt;
 
-
-            yarp::sig::Vector *vt;// = portsMTBSensors[accelerometer_runtime_index]->read(wait);
             vt = portsMTBSensors[gyroscope_runtime_index]->read(wait);
            if(vt!=NULL) {
                 if(mtbLastRead[gyroscope_runtime_index].size()==0)
