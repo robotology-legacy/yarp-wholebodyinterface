@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 RBCS Department & iCub Facility - Istituto Italiano di Tecnologia
+ * Copyright (C) 2013-2016 RBCS Department & iCub Facility - Istituto Italiano di Tecnologia
  * Author: Andrea Del Prete, Francesco Romano, Silvio Traversaro
  * email: andrea.delprete@iit.it
  *
@@ -16,8 +16,8 @@
  * Public License for more details
  */
 
-#ifndef WBMODEL_ICUB_H
-#define WBMODEL_ICUB_H
+#ifndef YARP_WBMODEL_H
+#define YARP_WBMODEL_H
 
 #include <wbi/wbiUtil.h>
 #include <wbi/wbiID.h>
@@ -30,24 +30,19 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/dev/PolyDriver.h>
 
-#include <iCub/ctrl/adaptWinPolyEstimator.h>
-#include <iCub/ctrl/filters.h>
-#include <iCub/skinDynLib/skinContactList.h>
+#include <yarp/sig/Vector.h>
+#include <yarp/sig/Matrix.h>
+
+#include <iDynTree/KinDynComputations.h>
+#include <iDynTree/Model/FreeFloatingState.h>
+#include <iDynTree/Model/FreeFloatingMatrices.h>
+
 #include <map>
 
 namespace wbi {
     class ID;
     class IDList;
 }
-
-namespace iCub
-{
-namespace iDynTree
-{
-class DynTree;
-}
-}
-
 
 namespace yarpWbi
 {
@@ -75,42 +70,34 @@ namespace yarpWbi
     protected:
         wbi::IDList jointIdList;
         wbi::IDList frameIdList;
-
         bool initDone;
         int dof;
-
-        //iCub::iDynTree::DynTree * p_model;
         yarp::os::Property wbi_yarp_properties;
-        iCub::iDynTree::DynTree * p_model;
 
-        yarp::sig::Matrix world_base_transformation;
+        // iDynTree class actually used for all computations
+        iDynTree::KinDynComputations m_kinDynComp;
 
-        yarp::sig::Vector v_base, a_base;
-        yarp::sig::Vector omega_base, domega_base;
+        ////////////////////////////////////////////////////////
+        //// Input buffers
+        ////////////////////////////////////////////////////////
+        iDynTree::FreeFloatingPos      m_modelPos;
+        iDynTree::Twist                m_baseVel;
+        iDynTree::JointDOFsDoubleArray m_jntVel;
+        iDynTree::Vector6              m_baseAcc;
+        iDynTree::JointDOFsDoubleArray m_jntAcc;
+        iDynTree::Vector3              m_worldGravity;
 
-        yarp::sig::Vector v_six_elems_base;
-        yarp::sig::Vector a_six_elems_base;
+        ////////////////////////////////////////////////////////
+        //// Output buffers
+        ////////////////////////////////////////////////////////
+        iDynTree::FreeFloatingGeneralizedTorques m_genTrqs;
+        iDynTree::FreeFloatingMassMatrix         m_massMatrix;
+        iDynTree::FrameFreeFloatingJacobian      m_frameJacobian;
+        iDynTree::MomentumFreeFloatingJacobian   m_momentumJacobian;
 
-
-        yarp::sig::Vector all_q;
-        yarp::sig::Vector all_dq;
-        yarp::sig::Vector all_ddq;
-
-        yarp::sig::Vector all_q_min, all_q_max;
-
-        //Output buffers
-        yarp::sig::Vector generalized_floating_base_torques; //n+6 outputs for inverse dynamics
-        yarp::sig::Matrix floating_base_mass_matrix;
-        yarp::sig::Matrix reduced_floating_base_mass_matrix;
-        yarp::sig::Vector six_elem_buffer;
-        yarp::sig::Vector three_elem_buffer;
-        yarp::sig::Matrix homMatrixBuffer;
-        yarp::sig::Matrix adjMatrixBuffer;
-        yarp::sig::Matrix HresultBuffer;
-        yarp::sig::Matrix reducedJacobianBuffer;
-   
-
-        // *** Variables needed for opening IControlLimits interfaces
+        ////////////////////////////////////////////////////////////
+        /// Variables needed for opening IControlLimits interfaces
+        ////////////////////////////////////////////////////////////
         bool getLimitsFromControlBoard;
         std::string                                 name;           // name used as root for the local ports
         std::string                                 robot;          // name of the robot
@@ -120,41 +107,45 @@ namespace yarpWbi
         std::vector< std::pair<int,int> >  controlBoardAxisList;
         std::vector<yarp::dev::PolyDriver*>       dd;
         std::vector<yarp::dev::IControlLimits*>   ilim;
-
-
-        std::vector<int> wbiToiDynTreeJointId;
-
         bool openDrivers(int bp);
-
-        bool convertBasePose(const wbi::Frame &xBase, yarp::sig::Matrix & H_world_base);
-        bool convertBaseVelocity(const double *dxB, yarp::sig::Vector & v_b, yarp::sig::Vector & omega_b);
-        bool convertBaseAcceleration(const double *ddxB, yarp::sig::Vector & a_b, yarp::sig::Vector & domega_b);
-        bool convertBaseVelocity(const double *dxB, yarp::sig::Vector & v_six_elems_b);
-        bool convertBaseAcceleration(const double *ddxB, yarp::sig::Vector & a_six_elems_b);
-
-
-        bool convertDQ(const double *dq_input, yarp::sig::Vector & dq_complete_output);
-        bool convertDDQ(const double *ddq_input, yarp::sig::Vector & ddq_complete_output);
-
-        bool convertGeneralizedTorques(yarp::sig::Vector idyntree_base_force, yarp::sig::Vector idyntree_torques, double * tau);
-
         bool closeDrivers();
-
         bool getJointLimitFromControlBoard(double *qMin, double *qMax, int joint);
 
+        //////////////////////////////////////////////////////////////////
+        /// Conversion functions between input data and internal buffers
+        //////////////////////////////////////////////////////////////////
+        void convertBasePose(const wbi::Frame &xBase, iDynTree::Transform & world_H_base);
+        void convertBaseVelocity(const double *dxB, iDynTree::Twist & baseVel);
+        void convertBaseAcceleration(const double *ddxB, iDynTree::Vector6 & baseAcc);
+        void convertQ(const double *q_input, iDynTree::JointPosDoubleArray & q_idyntree);
+        void convertDQ(const double *dq_input, iDynTree::JointDOFsDoubleArray & dq_idyntree);
+        void convertDDQ(const double *ddq_input, iDynTree::JointDOFsDoubleArray & ddq_idyntree);
+        void convertWorldGravity(const double *grav, iDynTree::Vector3 & ddq_idyntree);
+        void convertGeneralizedTorques(const iDynTree::Wrench & baseWrench_idyntree,
+                                       const iDynTree::JointDOFsDoubleArray & jntTrqs_idyntree,
+                                       double * tau);
+        void convertOutpuMatrix(const iDynTree::VectorDynSize & mat,
+                                      double * mat);
+
+        // Update the state (pos and vel) of the KinDynComputations class
+        void updateState();
+
         /**
-         * Helper function: convert a pos offset 3D vector in a 4x4 homogeneours
+         * Helper function: convert a pos offset 3D vector in a iDynTree::Transform
          * matrix that transforms from the offset frame to the one specified)
          * ( specifiedFrame_H_frameWithOffset ).
          */
-        void posToHomMatrix(double * posIn, yarp::sig::Matrix & homMatrix);
+        void posToHomMatrix(double * posIn,
+                            iDynTree::Transform & homMatrix);
 
         /**
-         * Helper function: convert a pos offset 3D vector in a 6x6 homogeneours
-         * matrix that transforms from the (frameWithoutOffset,world) frame to the
+         * Helper function: convert a pos offset 3D vector in a iDynTree::Transform
+         * that transforms from the (frameWithoutOffset,world) frame to the
          * (frameWithOffset,world) . [We mean (position,orientation)].
          */
-        void posToAdjMatrix(double * posIn, const yarp::sig::Matrix & world_R_frame, yarp::sig::Matrix & adjMatrix);
+        void posToAdjMatrix(double * posIn,
+                            const iDynTree::Rotation & world_R_frame,
+                                  iDynTree::Transform & adjMatrix);
 
     public:
          /**
@@ -241,7 +232,7 @@ namespace yarpWbi
          * @param xBase homogeneous transformation that applied on a 4d homogeneous position vector expressed in the base frame transforms it in the world frame (world_H_base).
          * @param dq Joint velocities (rad/s).
          * @param frameId Id of the link.
-         * @param dJdq Output 6-dim vector containing the product \f$\dot{J}\dot{q}\f$.
+         * @param dJdq Output 6-dim vector containing the product \f$ \dot{J}\dot{q} \f$ .
          * @param pos 3d position of the point expressed w.r.t the specified frame.
          *        If pos is not specified (0, default) then the origin of frame is assumed.
          *        If frameId is COM_LINK_ID, the position offset (pos argument) is ignored.
@@ -312,34 +303,6 @@ namespace yarpWbi
          * @return the list of available frames.
          */
         virtual const wbi::IDList& getFrameList();
-        
-        /**
-         *  Given a vector of joint positions 'all_q' of size ‘NrOfDOFs’ as defined in a DynTree object (which differs from the concept of DOF in yarpWholeBodyModel, namely ‘dof’), this method converts q_input of size 'dof' into its equivalent all_q of size 'NrOfDOFs'.
-         *
-         *  @param q_input           Pointer to joints configuration array of size 'dof'.
-         *  @param q_complete_output Output Vector of size NrOfDOFs for a DynTree object.
-         *
-         *  @return true if successful, false otherwise.
-         */
-        bool convertQ(const double *q_input, yarp::sig::Vector & q_complete_output);
-        
-        /**
-         *  Given a vector all_q of size ‘NrOfDOFs’ as defined in a DynTree object (which differs from the concept of DOF in yarpWholeBodyModel, namely ‘dof’), this method converts a vector all_q of size NrOfDOFs into its equivalent vector of size dof.
-         *
-         *  @param q_complete_input Vector of joints configuration of size NrOfDOFs for a DynTree object.
-         *  @param q_output         Pointer to array of joints configuration of size 'dof' for an object of type yarpWholeBodyModel.
-         *
-         *  @return True if successful, false otherwise.
-         */
-        bool convertQ(const yarp::sig::Vector & q_complete_input, double *q_output);
-        
-        /**
-         *  Provides access to the DynTree model of the robot created by yarpWholeBodyModel.
-         *
-         *  @return Pointer to DynTree model of the robot.
-         */
-        iCub::iDynTree::DynTree * getRobotModel();
-
     };
 }
 
