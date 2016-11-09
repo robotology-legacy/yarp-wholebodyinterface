@@ -193,7 +193,6 @@ bool yarpWholeBodyStates::loadCouplingsFromConfigurationFile()
 bool yarpWholeBodyStates::configureFloatingBaseStateEstimator()
 {
     yarp::os::Bottle & state_opt_bot = wbi_yarp_properties.findGroup("WBI_STATE_OPTIONS");
-    std::cerr << "\n\n" << state_opt_bot.toString() << "\n\n";
 
     // handle deprecated parameters
     if (state_opt_bot.check("WORLD_REFERENCE_FRAME"))
