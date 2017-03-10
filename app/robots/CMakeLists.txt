@@ -29,4 +29,3 @@ else()
     add_subdirectory(${ROBOT_NAME})
   endif()
 endif()
-
