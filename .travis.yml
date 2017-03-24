@@ -37,7 +37,7 @@ script:
   - mkdir build
   - cd build
   - cmake -DCODYCO_TRAVIS_CI:BOOL=ON -DCMAKE_BUILD_TYPE=${TRAVIS_BUILD_TYPE} -DYARPWHOLEBODYINTERFACE_ENABLE_TESTS:BOOL=ON -DNON_INTERACTIVE_BUILD:BOOL=TRUE ..
-  - cmake --build . --config ${TRAVIS_BUILD_TYPE}
+  - make VERBOSE=1
   - ctest
 
 notifications:
