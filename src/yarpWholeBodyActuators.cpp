@@ -85,7 +85,7 @@ bool yarpWholeBodyActuators::openControlBoardDrivers(int bp)
                      " but the total number of bodyparts considered in the interface is " << controlBoardNames.size() << std::endl;
         return false;
     }
-    itrq[bp]=0; iimp[bp]=0; icmd[bp]=0; ivel[bp]=0; ipos[bp]=0; iopl[bp]=0;  dd[bp]=0; ipositionDirect[bp]=0; iinteraction[bp]=0;
+    itrq[bp]=0; iimp[bp]=0; icmd[bp]=0; ivel[bp]=0; ipos[bp]=0; iopl[bp]=0;  dd[bp]=0; ipositionDirect[bp]=0; iinteraction[bp]=0; ipid[bp]=0;
     if(!openPolyDriver(name, robot, dd[bp], controlBoardNames[bp].c_str()))
     {
         std::cerr << "[ERR] yarpWholeBodyActuators::openDrivers error: unable to open controlboard " << controlBoardNames[bp]
@@ -107,7 +107,7 @@ bool yarpWholeBodyActuators::openControlBoardDrivers(int bp)
 
     bool ok = dd[bp]->view(itrq[bp]) && dd[bp]->view(iimp[bp]) && dd[bp]->view(icmd[bp])
               && dd[bp]->view(ivel[bp]) && dd[bp]->view(ipos[bp]) && dd[bp]->view(typed_iopl)
-              && dd[bp]->view(ipositionDirect[bp]) && dd[bp]->view(iinteraction[bp]);
+              && dd[bp]->view(ipositionDirect[bp]) && dd[bp]->view(iinteraction[bp]) && dd[bp]->view(ipid[bp]);
     iopl[bp] = typed_iopl; // copy to iopl which is a (void*)
 
     if(!ok)
@@ -183,6 +183,7 @@ bool yarpWholeBodyActuators::init()
         iopl.resize(controlBoardNames.size());
         ipositionDirect.resize(controlBoardNames.size());
         iinteraction.resize(controlBoardNames.size());
+        ipid.resize(controlBoardNames.size());
         dd.resize(controlBoardNames.size());
 
         //Open necessary yarp controlboard drivers
@@ -235,6 +236,7 @@ bool yarpWholeBodyActuators::init()
         iopl.resize(0);
         ipositionDirect.resize(0);
         iinteraction.resize(0);
+        ipid.resize(0);
         dd.resize(0);
         controlBoardAxisList.resize(0);
 
@@ -1209,15 +1211,15 @@ bool yarpWholeBodyActuators::getControlReferences(wbi::ControlMode controlMode, 
         switch(controlMode)
         {
             case CTRL_MODE_POS:
-                ret_value = ipos[bodyPart]->getTargetPosition(controlBoardAxis, ref);
+                ret_value = ipid[bodyPart]->getPidReference(VOCAB_PIDTYPE_POSITION,controlBoardAxis, ref);
                 (*ref) *= yarpWbi::Deg2Rad;
                 break;
             case CTRL_MODE_DIRECT_POSITION:
-                ret_value = ipositionDirect[bodyPart]->getRefPosition(controlBoardAxis, ref);
+                ret_value = ipid[bodyPart]->getPidReference(VOCAB_PIDTYPE_POSITION,controlBoardAxis, ref);
                 (*ref) *= yarpWbi::Deg2Rad;
                 break;
             case CTRL_MODE_VEL:
-                ret_value = ivel[bodyPart]->getRefVelocity(controlBoardAxis, ref);
+                ipid[bodyPart]->getPidReference(VOCAB_PIDTYPE_VELOCITY,controlBoardAxis, ref);
                 (*ref) *= yarpWbi::Deg2Rad;
                 break;
             case CTRL_MODE_TORQUE:
@@ -1246,7 +1248,7 @@ bool yarpWholeBodyActuators::getControlReferences(wbi::ControlMode controlMode, 
         {
             case CTRL_MODE_POS:
             {
-                ok = ipos[wbi_controlboard_id]->getTargetPositions(controlBoardReadingBuffer[wbi_controlboard_id].data());
+                ok = ipid[wbi_controlboard_id]->getPidReferences(VOCAB_PIDTYPE_POSITION, controlBoardReadingBuffer[wbi_controlboard_id].data());
                 if(!ok)
                 {
                     std::cerr << "[ERR] yarpWholeBodyActuators::getControlReferences error:"
@@ -1261,7 +1263,7 @@ bool yarpWholeBodyActuators::getControlReferences(wbi::ControlMode controlMode, 
                 break;
             case CTRL_MODE_DIRECT_POSITION:
             {
-                ok = ipositionDirect[wbi_controlboard_id]->getRefPositions(controlBoardReadingBuffer[wbi_controlboard_id].data());
+                ok = ipid[wbi_controlboard_id]->getPidReferences(VOCAB_PIDTYPE_POSITION, controlBoardReadingBuffer[wbi_controlboard_id].data());
                 if(!ok)
                 {
                     std::cerr << "[ERR] yarpWholeBodyActuators::getControlReferences error:"
@@ -1278,7 +1280,7 @@ bool yarpWholeBodyActuators::getControlReferences(wbi::ControlMode controlMode, 
                 break;
             case CTRL_MODE_VEL:
             {
-                ok = ivel[wbi_controlboard_id]->getRefVelocities(controlBoardReadingBuffer[wbi_controlboard_id].data());
+                ok = ipid[wbi_controlboard_id]->getPidReferences(VOCAB_PIDTYPE_VELOCITY, controlBoardReadingBuffer[wbi_controlboard_id].data());
                 if(!ok)
                 {
                     std::cerr << "[ERR] yarpWholeBodyActuators::getControlReferences error:"
